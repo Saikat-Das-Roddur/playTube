@@ -32,11 +32,11 @@
         android:layout_height="wrap_content">
         <EditText
             android:layout_centerVertical="true"
-            android:id="@+id/urlEt"
+            android:id="@+id/stringEt"
             android:padding="16dp"
             android:layout_margin="16dp"
             android:hint="Paste your video Id"
-            android:layout_toLeftOf="@id/playBtn"
+            android:layout_toLeftOf="@id/playIv"
             android:background="@android:color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -46,7 +46,7 @@
             android:layout_marginRight="16dp"
             android:padding="8dp"
             android:layout_alignParentRight="true"
-            android:id="@+id/playBtn"
+            android:id="@+id/playIv"
             android:layout_width="48dp"
             android:layout_height="48dp" />
 
