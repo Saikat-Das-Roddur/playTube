@@ -1,0 +1,304 @@
+package org.richit.animal.Activities;
+
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
+
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.richit.animal.AdUtils.MyAdsListener;
+import org.richit.animal.AdUtils.MyAllAdsUtil;
+import org.richit.animal.Database.FavouriteDB;
+import org.richit.animal.Models.AnimalModel;
+import org.richit.animal.Config;
+import org.richit.animal.R;
+import org.richit.animal.Youtube.YoutubeApiHelper;
+import org.richit.animal.Youtube.YoutubeListener;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class AnimalDetailsActivity extends AppCompatActivity {
+
+    AnimalModel animalModel;
+    TextView textViewTitle, textViewName,
+            textViewDescription, textViewOtherDesc;
+
+    ImageView imageViewAnimal,
+            imageViewMap, imageViewBack,
+            imageViewFavourite, imageViewMedia,
+            imageViewShare;
+    LinearLayout linearLayoutExtraData;
+    ScrollView scrollView;
+    YouTubePlayerView playerView;
+    YouTubePlayer player;
+    String videoID;
+    boolean tryToPlay = false;
+    boolean inVideoMode = true;
+    Uri uri;
+    private static boolean errorDialogShownOnce = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_details_2);
+        animalModel = getIntent().getParcelableExtra("animalTypes");
+        //Initialize Database
+        FavouriteDB.init(this);
+        scrollView = findViewById(R.id.scrollView);
+        textViewTitle = findViewById(R.id.showName);
+        textViewName = findViewById(R.id.animalName);
+        textViewDescription = findViewById(R.id.animalDescription);
+        textViewOtherDesc = findViewById(R.id.tvOtherDesc);
+        linearLayoutExtraData = findViewById(R.id.extraDataLayout);
+        addExtraDataIfAvailable(
+                new ExtraData("Kingdom", animalModel.getKingdom()),
+                new ExtraData("Phylum", animalModel.getPhylum()),
+                new ExtraData("Class", animalModel.getAnimalClass()),
+                new ExtraData("Order", animalModel.getOrder()),
+                new ExtraData("Family", animalModel.getFamily()),
+                new ExtraData("Genus", animalModel.getGenus()),
+                new ExtraData("Scientific name", animalModel.getScientific()),
+                new ExtraData("Common Name", animalModel.getCommonname()),
+                new ExtraData("Number of Species", animalModel.getNumberofspecies()),
+                new ExtraData("Location", animalModel.getLocation()),
+                new ExtraData("Type", animalModel.getType()),
+                new ExtraData("Origin", animalModel.getOrigin()),
+                new ExtraData("Habitat", animalModel.getHabitat()),
+                new ExtraData("Color", animalModel.getColor()),
+                new ExtraData("Skin", animalModel.getSkin()),
+                new ExtraData("Top Speed", animalModel.getSpeed()),
+                new ExtraData("Diet", animalModel.getDiet()),
+                new ExtraData("Wing Span", animalModel.getWingspan()),
+                new ExtraData("Prey", animalModel.getPrey()),
+                new ExtraData("Main Prey", animalModel.getMainprey()),
+                new ExtraData("Predators", animalModel.getPredators()),
+                new ExtraData("Life Style", animalModel.getLifestyle()),
+                new ExtraData("Water Type", animalModel.getWater()),
+                new ExtraData("ph Level", animalModel.getPhlevel()),
+                new ExtraData("Conservation Status", animalModel.getConservation()),
+                new ExtraData("Lifespan", animalModel.getLifespan()),
+                new ExtraData("Average Weight", animalModel.getWeight()),
+                new ExtraData("Temperament", animalModel.getTemperament()),
+                new ExtraData("Training", animalModel.getTraining()),
+                new ExtraData("Features", animalModel.getFeatures()),
+                new ExtraData("Special Feature", animalModel.getSpecialfeature()),
+                new ExtraData("Distinctive Feature", animalModel.getDistinctivefeature()),
+                new ExtraData("Most Distinctive Feature", animalModel.getMostdistinctivefeature()),
+                new ExtraData("Fun Fact", animalModel.getFunfact())
+
+        );
+        //Load YouTube video before playing
+        new YoutubeApiHelper(AnimalDetailsActivity.this, Config.youTubeApiUrl + animalModel.getName() + "s Animal Facts", new YoutubeListener() {
+            @Override
+            public void onJsonDataReceived(String updateModel) {
+                try {
+                    JSONObject jsonObject = new JSONObject(updateModel);
+                    JSONArray jsonArray = jsonObject.getJSONArray("items");
+
+                    videoID = jsonArray.getJSONObject(0).getJSONObject("id").getString("videoId");
+                    Log.d("Video", "onJsonDataReceived: " + videoID);
+                    getLifecycle().addObserver(playerView);
+                    playerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
+                        @Override
+                        public void onReady(YouTubePlayer youTubePlayer) {
+                            youTubePlayer.loadVideo(videoID, 0);
+                            player = youTubePlayer;
+                            if (tryToPlay) {
+                                player.play();
+                            } else
+                                player.pause();
+
+                        }
+
+                        @Override
+                        public void onError(YouTubePlayer youTubePlayer, PlayerConstants.PlayerError error) {
+                            if (errorDialogShownOnce) {
+                                Toast.makeText(AnimalDetailsActivity.this, "Error loading video. Please use a VPN", Toast.LENGTH_LONG).show();
+                            } else {
+                                new AlertDialog.Builder(AnimalDetailsActivity.this)
+                                        .setTitle("Error loading")
+                                        .setMessage(String.format(
+                                                "Error: %s\n\nThis may cause because of your ISP. Sometimes, using a VPN can fix the problem...", error.name()
+                                        ))
+                                        .setPositiveButton("OK", null)
+                                        .show();
+                            }
+                            errorDialogShownOnce = !errorDialogShownOnce;
+                            super.onError(youTubePlayer, error);
+                        }
+                    });
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("What?", "onError: ");
+            }
+        }).execute();
+
+        //Load bitmap image for sharing
+        Picasso.get().load(Config.youTubeVideoUrl + animalModel.getImage()).into(new Target() {
+            @Override
+            public void onBitmapLoaded(Bitmap bitmapImage, Picasso.LoadedFrom from) {
+                uri = getLocalBitmapUri(bitmapImage);
+
+            }
+
+            @Override
+            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+
+            }
+
+            @Override
+            public void onPrepareLoad(Drawable placeHolderDrawable) {
+            }
+        });
+
+        //Initializing the views
+        imageViewAnimal = findViewById(R.id.animalImageView);
+        imageViewMap = findViewById(R.id.mapImageView);
+        imageViewBack = findViewById(R.id.imageViewBack);
+        imageViewShare = findViewById(R.id.imageViewShare);
+        imageViewMedia = findViewById(R.id.imageViewMedia);
+        playerView = findViewById(R.id.youtube_player_view);
+        //Animal image show at the beginning that's why video playing button is invisible
+        playerView.setVisibility(View.GONE);
+        imageViewFavourite = findViewById(R.id.ivFavourite);
+        imageViewFavourite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //By clicking the favourite image view icon here user can set that animal is favourite or not
+                //Checking if that data we are looking for is in user's favourite list or not
+                if (FavouriteDB.isFavourite(animalModel.getName())) {
+                    //here we removing animal data from favourite list so that
+                    // data is no longer available to user favourite list
+                    boolean deleted = FavouriteDB.deleteData(animalModel.getName());
+                    Toast.makeText(AnimalDetailsActivity.this, "Removed from favourite", Toast.LENGTH_SHORT).show();
+                    if (deleted)
+                        //if data is not in favourite changing the favourite image icon color
+                        notFavourite();
+                } else {
+                    //Adding animal data to favourite list so that
+                    // user can see which data is in the favourite list
+                    boolean added = FavouriteDB.addData(animalModel);
+                    Toast.makeText(AnimalDetailsActivity.this, "Added to favourite", Toast.LENGTH_SHORT).show();
+                    if (added)
+                        //if data is in favourite changing the image icon color
+                        favourite();
+                }
+                MyAllAdsUtil.showInterIfOk(AnimalDetailsActivity.this, new MyAdsListener());
+            }
+        });
+
+        imageViewMedia.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Toggle image view and player view
+                if (inVideoMode) {
+                    //Playing animal video from youtube
+                    if (player != null)
+                        player.play();
+                    else
+                        tryToPlay = true;
+                    scrollView.smoothScrollTo(0, 0);
+                    //Using Visible/Gone property of image view here
+                    // we are toggling between image  mode and video playing mode
+                    //Here it's now on video playing mode so we are showing the animal fact's related video and
+                    //hiding the animal image
+                    imageViewAnimal.setVisibility(View.GONE);
+                    playerView.setVisibility(View.VISIBLE);
+                    imageViewMedia.setImageResource(R.drawable.ic_image_size_select_actual_white_24dp);
+                    inVideoMode = false;
+
+                } else {
+
+                    if (player != null) {
+                        //if user switch over image mode then we pause the playing video
+                        player.pause();
+                    }
+                    //Using Visible/Gone property of image view here
+                    // we are toggling between image  mode and video playing mode
+                    //Here it's now on image view mode so we are showing the animal image and
+                    //hiding the video playing
+                    imageViewAnimal.setVisibility(View.VISIBLE);
+                    imageViewMedia.setImageResource(R.drawable.ic_play_white_24dp);
+                    playerView.setVisibility(View.GONE);
+                    scrollView.smoothScrollTo(0, 0);
+                    //setting the inVideoMode true so that when user press the image view media icon
+                    // it can start playing video again
+                    inVideoMode = true;
+                }
+                MyAllAdsUtil.showInterIfOk(AnimalDetailsActivity.this, new MyAdsListener());
+
+            }
+        });
+
+        //Share images with description and youtube video link using shareable media
+        imageViewShare.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MyAllAdsUtil.showInterIfOk(AnimalDetailsActivity.this, new MyAdsListener());
+                final Intent in = new Intent(Intent.ACTION_SEND);
+                in.setType("*/*");
+                in.putExtra(Intent.EXTRA_TEXT, animalModel.getDesc1() + animalModel.getDesc2() + "\n" + Config.youTubeVideoUrl + videoID);
+                //video streaming link
+                in.putExtra(Intent.EXTRA_STREAM, uri);
+                //in.setType("image/*");
+                try {
+                    startActivity(Intent.createChooser(in, "Share"));
+                } catch (Exception e) {
+                    Toast.makeText(AnimalDetailsActivity.this, "Please wait until the images are loaded", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        imageViewBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+
+        //Checking if images are from wikipedia or not
+        if (animalModel.getImage().toLowerCase().contains("wikipedia")) {
+            Picasso.get().load(animalModel.getImage())
+                    .placeholder(R.drawable.loading)
+                    .into(imageViewAnimal);
+            Picasso.get().load(animalModel.getMap())
+                    .placeholder(R.drawable.loading)
+                    .into(imageViewMap);
+
+        } else {
+            //If data is not from wikipedia then data is from a-z-animals.com
+            //Setting loaded image data of animal to specific view
+            Picasso.get().load(Config.animalImagePath+ animalModel.getImage())
+                    .placeholder(R.drawable.loading)
+                    .into(imageViewAnimal);
+            Picasso.get().load(Config.animalImagePath 

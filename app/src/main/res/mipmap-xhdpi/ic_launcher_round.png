@@ -1,0 +1,180 @@
+package org.richit.animal.Activities;
+
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.gson.Gson;
+import com.mikepenz.materialdrawer.Drawer;
+import com.mikepenz.materialdrawer.DrawerBuilder;
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.richit.animal.AdUtils.AdHelper;
+import org.richit.animal.AdUtils.MyAdsListener;
+import org.richit.animal.AdUtils.MyAllAdsUtil;
+import org.richit.animal.Adapters.AnimalAdapter;
+import org.richit.animal.Database.FavouriteDB;
+import org.richit.animal.Models.AnimalModel;
+import org.richit.animal.Models.OnlineData;
+import org.richit.animal.Config;
+import org.richit.animal.Others.GlobaMethods;
+import org.richit.animal.Others.GlobalVariables;
+import org.richit.animal.R;
+import org.richit.materialofficeaboutlib.Others.LoadListener;
+import org.richit.materialofficeaboutlib.Others.OfficeAboutHelper;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+import p32929.myhouseads2lib.FayazSP;
+import p32929.myhouseads2lib.HouseAds;
+import p32929.myhouseads2lib.InterListener;
+import p32929.updaterlib.AppUpdater;
+import p32929.updaterlib.UpdateListener;
+import p32929.updaterlib.UpdateModel;
+
+public class MainActivity extends AppCompatActivity {
+
+    ProgressDialog progressDialog;
+    RecyclerView recyclerView;
+    AnimalAdapter animalAdapter;
+    OnlineData onlineData;
+    OfficeAboutHelper officeAboutHelper;
+    ImageView imageViewFavourite, imageViewLeft, imageViewSearch;
+    EditText editTextSearch;
+    String jsonData = "";
+    int pos = 0;
+    ArrayList<AnimalModel> animals = new ArrayList<>();
+    boolean inFavourite = false;
+    boolean inSearch = true;
+    boolean isFirstTime = true;
+    int i = 1, j = 0;
+    HouseAds houseAds;
+
+    private static final int CONTENT = 0;
+    private static final int AD = 1;
+
+    LinearLayout linearLayoutAds;
+
+    private String TAG = this.getClass().getSimpleName();
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_2);
+        //Initialize Shared Preference for showing data if network unavailable
+        FayazSP.init(this);
+        //Initialize FavouriteDB for adding data to favourite list
+        FavouriteDB.init(this);
+        pos = getIntent().getIntExtra("position", 0);
+        imageViewFavourite = findViewById(R.id.ivFavourite);
+        imageViewLeft = findViewById(R.id.ivLeft);
+        imageViewSearch = findViewById(R.id.ivSearch);
+        imageViewLeft.setImageResource(R.drawable.ic_menu_white_18dp);
+        editTextSearch = findViewById(R.id.app_name);
+        editTextSearch.setEnabled(false);
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Loading");
+        progressDialog.setMessage("Please wait...");
+        progressDialog.setCancelable(false);
+        linearLayoutAds = findViewById(R.id.adsLL);
+
+        officeAboutHelper = new OfficeAboutHelper(this, Config.officeAboutUrl);
+
+        houseAds = new HouseAds(this,
+                Config.houseAdsUrl
+        );
+        houseAds.setFeedbackEmail("saikatd397@gmail.com");
+        houseAds.setMenInBlack(true);
+        houseAds.setListener(new InterListener() {
+            @Override
+            public void onShow(LinearLayout linearLayoutAboveList) {
+                MyAllAdsUtil.addAnyBannerAd(MainActivity.this, true, linearLayoutAboveList, new MyAdsListener());
+            }
+        });
+
+        recyclerView = findViewById(R.id.recyclerView);
+        animalAdapter = new AnimalAdapter(this, animals);
+        recyclerView.setAdapter(animalAdapter);
+        editTextSearch.setHint(R.string.app_name);
+        final GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 2);
+        gridLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            //Set Ads after a specific grid span count
+            public int getSpanSize(int position) {
+                switch (animalAdapter.getItemViewType(position)) {
+                    case CONTENT:
+                        return 1;
+                    case AD:
+                        return gridLayoutManager.getSpanCount();
+                    default:
+                        return -1;
+                }
+            }
+        });
+        recyclerView.setLayoutManager(gridLayoutManager);
+
+        //Hiding Keyboard at the beginning
+        final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        getWindow().setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+        );
+
+        imageViewSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (inSearch) {
+                    onSearch();
+                    //Show keyboard when searching
+                    imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, InputMethodManager.SHOW_IMPLICIT);
+
+                } else {
+                    notOnSearch();
+                    //imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
+
+
+        imageViewFavourite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMenu(v);
+            }
+        });
+
+        imageViewLeft.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (inFavourite) {
+                    onBack();
+                } else {
+                    editTextSearch.setHint(getNam
