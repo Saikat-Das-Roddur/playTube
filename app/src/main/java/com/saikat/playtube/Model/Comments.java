@@ -10,8 +10,7 @@ public class Comments implements Parcelable {
     String userImage;
     String comment;
 
-    public Comments(String commentId, String userName, String userImage, String comment) {
-        this.commentId = commentId;
+    public Comments(String userName, String userImage, String comment) {
         this.userName = userName;
         this.userImage = userImage;
         this.comment = comment;

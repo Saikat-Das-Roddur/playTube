@@ -2,9 +2,9 @@ package com.saikat.playtube.Activity;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -14,7 +14,10 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstan
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+import com.saikat.playtube.Adapter.CommentAdapter;
+import com.saikat.playtube.Adapter.VideoAdapter;
 import com.saikat.playtube.Config;
+import com.saikat.playtube.Model.Comments;
 import com.saikat.playtube.Model.Video;
 import com.saikat.playtube.R;
 import com.saikat.playtube.YouTube.YoutubeApiHelper;
@@ -24,11 +27,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 public class VideoActivity extends AppCompatActivity {
+
+    RecyclerView recyclerView;
 
     YouTubePlayerView playerView;
     YouTubePlayer player;
 
+    CommentAdapter commentAdapter;
+    ArrayList<Comments> commentsArrayList = new ArrayList<>();
     boolean tryToPlayVideo = false;
     private static boolean errorDialogShownOnce = false;
 
@@ -37,6 +46,7 @@ public class VideoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
+        recyclerView = findViewById(R.id.recyclerViewComments);
         playerView = findViewById(R.id.youtube_player_view);
         String videoId = getIntent().getStringExtra("videoId");
         Log.d(TAG, "VideoId: "+videoId);
@@ -45,19 +55,21 @@ public class VideoActivity extends AppCompatActivity {
             Toast.makeText(this, "It's a playlist: "+videoId, Toast.LENGTH_SHORT).show();
         }else {
             playerView.setVisibility(View.VISIBLE);
-            initVideoloder(videoId);
+            initVideoLoader(videoId);
         }
 
     }
 
-    private void initVideoloder(final String videoId) {
+    private void initVideoLoader(final String videoId) {
         new YoutubeApiHelper(VideoActivity.this, Config.videoComment+videoId+"&maxResults=100&pageToken="+Config.pageToken, new YoutubeListener() {
             @Override
             public void onJsonDataReceived(String updateModel) {
                 try {
                     JSONObject jsonObject = new JSONObject(updateModel);
                     JSONArray jsonArray = jsonObject.getJSONArray("items");
-                    Log.d(TAG, "onJsonDataReceived: "+jsonArray);
+                    Config.pageToken = jsonObject.getString("nextPageToken");
+                    Log.d(TAG, "nextPageToken: "+Config.pageToken);
+                    populateComments(jsonArray);
                     getLifecycle().addObserver(playerView);
                     playerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
                         @Override
@@ -111,5 +123,33 @@ public class VideoActivity extends AppCompatActivity {
             }
         }).execute();
 
+    }
+
+    private void populateComments(JSONArray jsonArray) {
+
+        try {
+            Log.d(TAG, "populateComments: "+jsonArray);
+            for (int i = 0; i <jsonArray.length() ; i++) {
+                JSONObject jsonObject=jsonArray.getJSONObject(i).getJSONObject("snippet").getJSONObject("topLevelComment").getJSONObject("snippet");
+                String userName = jsonObject.getString("authorDisplayName");
+                String userComment = jsonObject.getString("textDisplay");
+                String userImage = jsonObject.getString("authorProfileImageUrl");
+                Log.d(TAG, "Title: "+userName);
+                Log.d(TAG, "Comment: "+userComment);
+                commentsArrayList.add(new Comments(userName,userImage,userComment));
+
+            }
+            setAdapter();
+        }catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+    private void setAdapter() {
+        commentAdapter = new CommentAdapter(VideoActivity.this,commentsArrayList);
+        Log.d(TAG, "DataList: "+ commentsArrayList);
+        recyclerView.setAdapter(commentAdapter);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(VideoActivity.this);
+        recyclerView.setLayoutManager(layoutManager);
     }
 }

@@ -2,20 +2,20 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
+    android:layout_margin="4dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
     <RelativeLayout
-
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
         <ImageView
             android:id="@+id/userIV"
-            android:padding="16dp"
+            android:padding="8dp"
             android:layout_centerVertical="true"
             android:layout_alignParentLeft="true"
             android:src="@drawable/ic_play_black_48dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_width="100dp"
+            android:layout_height="100dp" />
         <LinearLayout
             android:layout_margin="8dp"
             android:layout_toRightOf="@id/userIV"

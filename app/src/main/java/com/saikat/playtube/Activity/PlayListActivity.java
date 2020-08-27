@@ -26,17 +26,9 @@ import java.util.ArrayList;
 public class PlayListActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
-    //Library Classes
-    YouTubePlayerView playerView;
-    YouTubePlayer player;
-
     //Adapter
     VideoAdapter videoAdapter;
 
-    boolean tryToPlayVideo = false;
-    String videoID;
-    private static boolean errorDialogShownOnce = false;
-    Video video;
     ArrayList<Video> videoArrayList = new ArrayList<>();
 
     String TAG = getClass().getSimpleName();
