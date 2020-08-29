@@ -38,7 +38,6 @@ public class PlayListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_list);
         String channelId = getIntent().getStringExtra("channelId");
-        Log.d(TAG, "channelId: "+channelId);
         recyclerView = findViewById(R.id.recyclerView);
         initYoutubeVideoLoader(channelId);
     }
@@ -60,7 +59,7 @@ public class PlayListActivity extends AppCompatActivity {
                         String videoTitle = jsonArray.getJSONObject(i).getJSONObject("snippet").getString("title");
                         String videoDesc = jsonArray.getJSONObject(i).getJSONObject("snippet").getString("description");
                         String videoImage = jsonArray.getJSONObject(i).getJSONObject("snippet").getJSONObject("thumbnails").getJSONObject("medium").getString("url");
-                        Log.d(TAG, "Title: "+videoId);
+
                         videoArrayList.add(new Video(videoId,videoTitle,videoImage,videoDesc));
 
                     }
@@ -80,7 +79,6 @@ public class PlayListActivity extends AppCompatActivity {
 
     private void setAdapter() {
         videoAdapter = new VideoAdapter(PlayListActivity.this,videoArrayList);
-        Log.d(TAG, "DataList: "+ videoArrayList);
         recyclerView.setAdapter(videoAdapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(PlayListActivity.this);
         recyclerView.setLayoutManager(layoutManager);

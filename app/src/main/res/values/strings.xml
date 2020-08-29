@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">PlayTube</string>
+    <string name="server_client_id">337540017213-47sro0h8nctr6t1s7ojsn1uprb2gnt1t.apps.googleusercontent.com</string>
+    <string name="try_again">Try again!!</string>
+    <string name="client_secret">ydGMWyvTdDFkgVfTeG7r0X2e</string>
 </resources>

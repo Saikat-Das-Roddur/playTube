@@ -36,12 +36,12 @@ public class MainActivity extends AppCompatActivity {
         //Initializing views
         editTextString = findViewById(R.id.stringEt);
         imageViewPlay = findViewById(R.id.playIv);
-        Log.d(TAG, "onClick: "+editTextString.getText().toString());
+
         imageViewPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
               String data = editTextString.getText().toString();
-                Log.d(TAG, "data: "+ data);
+
               Intent intent = new Intent(MainActivity.this,PlayListActivity.class);
               intent.putExtra("channelId",data);
               startActivity(intent);

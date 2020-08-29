@@ -14,7 +14,7 @@
         app:autoPlay="false"
         app:enableLiveVideoUi="false"
         app:handleNetworkEvents="true"
-        app:showFullScreenButton="false"
+        app:showFullScreenButton="true"
         app:showSeekBar="true"
         app:showVideoCurrentTime="true"
         app:showVideoDuration="true"
@@ -25,9 +25,21 @@
         android:id="@+id/videoRate"
         android:layout_below="@id/youtube_player_view"
         android:orientation="horizontal"
+        android:background="@android:color/white"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-
+        <ImageView
+            android:id="@+id/likeIv"
+            android:padding="8dp"
+            android:src="@drawable/ic_thumb_up_grey600_24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <ImageView
+            android:id="@+id/disLikeIv"
+            android:padding="8dp"
+            android:src="@drawable/ic_thumb_down_grey600_24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewComments"
