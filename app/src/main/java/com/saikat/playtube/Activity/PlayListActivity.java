@@ -8,11 +8,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 
+import com.androidnetworking.AndroidNetworking;
+import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.JSONObjectRequestListener;
+import com.androidnetworking.interfaces.OkHttpResponseListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import com.saikat.playtube.Adapter.VideoAdapter;
 import com.saikat.playtube.Config;
 import com.saikat.playtube.Model.Video;
+import com.saikat.playtube.Others.ServerCalling;
 import com.saikat.playtube.R;
 import com.saikat.playtube.YouTube.YoutubeApiHelper;
 import com.saikat.playtube.YouTube.YoutubeListener;
@@ -22,6 +27,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+
+import okhttp3.Response;
 
 public class PlayListActivity extends AppCompatActivity {
 
@@ -43,13 +50,13 @@ public class PlayListActivity extends AppCompatActivity {
     }
 
     private void initYoutubeVideoLoader(String chanelId) {
-        new YoutubeApiHelper(PlayListActivity.this, Config.youTubeChannelApi+chanelId+"&maxResults=173"+Config.key/*"&part=snippet,id&order=date&maxResults=120"*/, new YoutubeListener() {
+        ServerCalling.getChannelVideos(chanelId, 50, new JSONObjectRequestListener() {
             @Override
-            public void onJsonDataReceived(String updateModel) {
+            public void onResponse(JSONObject jsonObject) {
+                Log.d(TAG, "onResponse: "+jsonObject);
                 try {
-                    JSONObject jsonObject = new JSONObject(updateModel);
                     JSONArray jsonArray = jsonObject.getJSONArray("items");
-                    for (int i = 0; i <jsonArray.length() ; i++) {
+                        for (int i = 0; i <jsonArray.length() ; i++) {
                         String videoId="";
                                if(jsonArray.getJSONObject(i).getJSONObject("id").getString("kind").equals("youtube#video")) {
                                    videoId = jsonArray.getJSONObject(i).getJSONObject("id").getString("videoId");
@@ -67,14 +74,14 @@ public class PlayListActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+
             }
 
             @Override
-            public void onError(String error) {
-                Log.d("What?", "onError: ");
+            public void onError(ANError anError) {
+                Log.d(TAG, "onError: "+anError);
             }
-        }).execute();
-
+        });
     }
 
     private void setAdapter() {

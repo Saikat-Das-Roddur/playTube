@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
@@ -43,9 +44,14 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.Holder>  {
         holder.cardView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(context, VideoActivity.class);
-                intent.putExtra("videoId",videoArrayList.get(position).getVideoId());
-                context.startActivity(intent);
+                if(videoArrayList.get(position).getVideoId().substring(0, 2).contains("PL")){
+                    Toast.makeText(context, "This is an playlist", Toast.LENGTH_SHORT).show();
+                }else {
+                    Intent intent = new Intent(context, VideoActivity.class);
+                    intent.putExtra("videoId",videoArrayList.get(position).getVideoId());
+                    context.startActivity(intent);
+                }
+
             }
         });
     }

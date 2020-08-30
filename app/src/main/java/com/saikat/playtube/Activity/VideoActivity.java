@@ -8,7 +8,6 @@ import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -17,17 +16,11 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
+
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.JSONObjectRequestListener;
 import com.androidnetworking.interfaces.OkHttpResponseListener;
-import com.androidnetworking.interfaces.StringRequestListener;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
@@ -37,33 +30,20 @@ import com.saikat.playtube.Adapter.CommentAdapter;
 import com.saikat.playtube.Config;
 import com.saikat.playtube.Model.Comments;
 
+import com.saikat.playtube.Others.GlobalVars;
 import com.saikat.playtube.Others.GoogleEventListener;
 import com.saikat.playtube.Others.GoogleLogIn;
+import com.saikat.playtube.Others.ServerCalling;
 import com.saikat.playtube.R;
 import com.saikat.playtube.YouTube.YoutubeApiHelper;
 import com.saikat.playtube.YouTube.YoutubeListener;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import io.opencensus.common.Scope;
 import okhttp3.Response;
 
 public class VideoActivity extends AppCompatActivity {
@@ -81,6 +61,8 @@ public class VideoActivity extends AppCompatActivity {
     boolean tryToPlayVideo = false;
     String videoId = "";
     String token ="";
+    String isLiked = "";
+
     private static boolean errorDialogShownOnce = false;
 
     String TAG = getClass().getSimpleName();
@@ -97,29 +79,36 @@ public class VideoActivity extends AppCompatActivity {
         videoId = getIntent().getStringExtra("videoId");
         Log.d(TAG, "VideoId: " + videoId);
         preferences = getSharedPreferences("GOOGLE_ACCOUNT",MODE_PRIVATE);
-        logIn = new GoogleLogIn(this);
 
-        if (videoId.substring(0, 2).contains("PL")) {
-            playerView.setVisibility(View.GONE);
-            Toast.makeText(this, "It's a playlist: " + videoId, Toast.LENGTH_SHORT).show();
-        } else {
-            playerView.setVisibility(View.VISIBLE);
-            initVideoLoader(videoId);
-        }
+
+
+        logIn = new GoogleLogIn(this);
+        initVideoLoader(videoId);
         imageViewLike.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(!preferences.getString("token",token).isEmpty()){
+                    Log.d(TAG, "Preference Token: "+token);
+                }else {
+                    isLoggedIn();
+                }
+                rateVideo(videoId,"like");
                 DrawableCompat.setTint(imageViewLike.getDrawable(),
                         ContextCompat.getColor(VideoActivity.this, R.color.colorAccent));
-                isLogedIn(videoId,"like");
+
             }
         });
         imageViewDisLike.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(!preferences.getString("token",token).isEmpty()){
+                    Log.d(TAG, "Preference Token: "+token);
+                }else {
+                    isLoggedIn();
+                }
+                rateVideo(videoId,"dislike");
                 DrawableCompat.setTint(imageViewDisLike.getDrawable(),
                         ContextCompat.getColor(VideoActivity.this, R.color.colorPrimary));
-                isLogedIn(videoId,"dislike");
 
             }
         });
@@ -134,15 +123,11 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     public void rateVideo(final String videoId, final String rating) {
-        AndroidNetworking.post(Config.videoRatingUrl)
-                .addHeaders("Authorization","Bearer "+Config.accessToken)
-                .addBodyParameter("id",videoId)
-                .addBodyParameter("rating",rating)
-                .build()
-                .getAsOkHttpResponse(new OkHttpResponseListener() {
+        ServerCalling.postVideoRating(videoId,rating,new OkHttpResponseListener() {
                     @Override
                     public void onResponse(Response response) {
-                        Log.d(TAG, "onResponse: "+response);
+                        if (response.code()==204)
+                            Toast.makeText(VideoActivity.this, "Successfully "+rating.toUpperCase(), Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -152,15 +137,15 @@ public class VideoActivity extends AppCompatActivity {
                 });
     }
 
-    public void isLogedIn(final String videoId, final String rating){
+    public boolean isLoggedIn(){
 
             logIn.signIn();
             logIn.setListener(new GoogleEventListener() {
                 @Override
                 public void onSignInSuccess(GoogleSignInAccount account) {
-                    preferences.edit().putString("GOOGLE_ACCOUNT",Config.accessToken).apply();
+                    preferences.edit().putString("token",Config.accessToken).apply();
                     Log.d(TAG, "onSignInSuccess: "+Config.accessToken );
-                    rateVideo(videoId,rating);
+                    GlobalVars.isLoggedIn = true;
                 }
 
                 @Override
@@ -178,74 +163,78 @@ public class VideoActivity extends AppCompatActivity {
 
                 }
             });
-
-
-
+            return GlobalVars.isLoggedIn;
     }
 
 
     private void initVideoLoader(final String videoId) {
-        new YoutubeApiHelper(VideoActivity.this, Config.videoComment + videoId + "&maxResults=100&pageToken=" + Config.pageToken, new YoutubeListener() {
+        ServerCalling.getVideoComments(videoId, new JSONObjectRequestListener() {
             @Override
-            public void onJsonDataReceived(String updateModel) {
+            public void onResponse(JSONObject jsonObject) {
+                JSONArray jsonArray = null;
                 try {
-                    JSONObject jsonObject = new JSONObject(updateModel);
-                    JSONArray jsonArray = jsonObject.getJSONArray("items");
+                    jsonArray = jsonObject.getJSONArray("items");
                     Config.pageToken = jsonObject.getString("nextPageToken");
                     Log.d(TAG, "nextPageToken: " + Config.pageToken);
                     populateComments(jsonArray);
-                    getLifecycle().addObserver(playerView);
-                    playerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
-                        @Override
-                        public void onReady(YouTubePlayer youTubePlayer) {
-
-                            //if video id is available then the youtube player play the video
-                            youTubePlayer.loadVideo(videoId, 0);
-                            player = youTubePlayer;
-
-                            //checking whether or not the user is in video mode or not
-                            if (tryToPlayVideo) {
-
-                                player.play();
-                            } else
-                                player.pause();
-
-                        }
-
-                        @Override
-                        public void onError(YouTubePlayer youTubePlayer, PlayerConstants.PlayerError error) {
-
-                            //Some country doesn't provide playing youtube video directly
-                            //may be that's an issue of the library or the Internet service provider
-                            //so here we checking first if the video is playing without a vpn
-                            //if not then we show dialog for using vpn
-                            if (errorDialogShownOnce) {
-                                Toast.makeText(VideoActivity.this, "Error loading video. Please use a VPN", Toast.LENGTH_LONG).show();
-                            } else {
-                                new AlertDialog.Builder(VideoActivity.this)
-                                        .setTitle("Error loading")
-                                        .setMessage(String.format(
-                                                "Error: %s\n\nThis may cause because of your ISP. Sometimes, using a VPN can fix the problem...", error.name()
-                                        ))
-                                        .setPositiveButton("OK", null)
-                                        .show();
-                            }
-                            errorDialogShownOnce = !errorDialogShownOnce;
-                            super.onError(youTubePlayer, error);
-                        }
-                    });
+                    playVideo(videoId);
 
 
-                } catch (JSONException e) {
+            } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
+            @Override
+            public void onError(ANError anError) {
+
+            }
+        });
+
+
+    }
+
+    private void playVideo(final String videoId){
+        getLifecycle().addObserver(playerView);
+        playerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
+            @Override
+            public void onReady(YouTubePlayer youTubePlayer) {
+
+                //if video id is available then the youtube player play the video
+                youTubePlayer.loadVideo(videoId, 0);
+                player = youTubePlayer;
+
+                //checking whether or not the user is in video mode or not
+                if (tryToPlayVideo) {
+
+                    player.play();
+                } else
+                    player.pause();
+
+            }
 
             @Override
-            public void onError(String error) {
-                Log.d("What?", "onError: ");
+            public void onError(YouTubePlayer youTubePlayer, PlayerConstants.PlayerError error) {
+
+                //Some country doesn't provide playing youtube video directly
+                //may be that's an issue of the library or the Internet service provider
+                //so here we checking first if the video is playing without a vpn
+                //if not then we show dialog for using vpn
+                if (errorDialogShownOnce) {
+                    Toast.makeText(VideoActivity.this, "Error loading video. Please use a VPN", Toast.LENGTH_LONG).show();
+                } else {
+                    new AlertDialog.Builder(VideoActivity.this)
+                            .setTitle("Error loading")
+                            .setMessage(String.format(
+                                    "Error: %s\n\nThis may cause because of your ISP. Sometimes, using a VPN can fix the problem...", error.name()
+                            ))
+                            .setPositiveButton("OK", null)
+                            .show();
+                }
+                errorDialogShownOnce = !errorDialogShownOnce;
+                super.onError(youTubePlayer, error);
             }
-        }).execute();
+        });
+
 
     }
 
