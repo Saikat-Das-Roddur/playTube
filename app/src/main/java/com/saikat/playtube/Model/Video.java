@@ -6,11 +6,23 @@ import android.os.Parcelable;
 public class Video implements Parcelable {
 
     String videoId;
+    String channelId;
     String videoName;
     String videoImage;
     String videoDesc;
 
-    public Video(String videoId,String videoName, String videoImage, String videoDesc) {
+    public Video() {
+    }
+
+    public Video(String videoId, String channelId, String videoName, String videoImage, String videoDesc) {
+        this.videoId = videoId;
+        this.channelId = channelId;
+        this.videoName = videoName;
+        this.videoImage = videoImage;
+        this.videoDesc = videoDesc;
+    }
+
+    public Video(String videoId, String videoName, String videoImage, String videoDesc) {
         this.videoId = videoId;
         this.videoName = videoName;
         this.videoImage = videoImage;
@@ -32,6 +44,13 @@ public class Video implements Parcelable {
 
     public void setVideoId(String videoId) {
         this.videoId = videoId;
+    }
+ public String getChannelId() {
+        return channelId;
+    }
+
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
     }
 
     public String getVideoName() {
@@ -60,6 +79,7 @@ public class Video implements Parcelable {
 
     protected Video(Parcel in) {
         videoId = in.readString();
+        channelId = in.readString();
         videoName = in.readString();
         videoDesc = in.readString();
         videoImage = in.readString();
@@ -86,6 +106,7 @@ public class Video implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int i) {
         dest.writeString(videoId);
+        dest.writeString(channelId);
         dest.writeString(videoName);
         dest.writeString(videoDesc);
         dest.writeString(videoImage);

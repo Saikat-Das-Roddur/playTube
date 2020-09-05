@@ -48,6 +48,7 @@ public class GoogleLogIn {
                 .requestScopes(new Scope(Config.youTubeScopeUrl))
                 .requestServerAuthCode(activity.getString(R.string.server_client_id))
                 .requestEmail()
+
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient((Context) this.activity, gso);
 
@@ -56,9 +57,9 @@ public class GoogleLogIn {
 
     public void signIn() {
 
-        if (!isSignedIn()) {
+        //if (!isSignedIn()) {
             activity.startActivityForResult(mGoogleSignInClient.getSignInIntent(), RC_SIGN_IN);
-       }
+       //}
 
 
     }
@@ -74,21 +75,24 @@ public class GoogleLogIn {
             try {
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = task.getResult(ApiException.class);
+
                 String authCode = account.getServerAuthCode();
                 GoogleTokenResponse tokenResponse =
                         new GoogleAuthorizationCodeTokenRequest(
                                 new NetHttpTransport(),
                                 JacksonFactory.getDefaultInstance(),
-                                "https://oauth2.googleapis.com/token",
+                                Config.tokenUrl,
                                 activity.getString(R.string.server_client_id),
                                 activity.getString(R.string.client_secret),
                                 authCode,
-                                "")  // Specify the same redirect URI that you use with your web
+                                "") // Specify the same redirect URI that you use with your web
                                 // app. If you don't have a web version of your app, you can
                                 // specify an empty string.
                                 .execute();
                 Config.accessToken = tokenResponse.getAccessToken();
-                Log.d(TAG, "AccessToken: " + Config.accessToken);
+                Log.d(TAG, "AccessToken: " + tokenResponse);
+                Config.refreshToken = tokenResponse.getRefreshToken();
+                Log.d(TAG, "Authcode: " + authCode);
                 Log.d(TAG, "onSignedIn: Data send");
                 Toast.makeText(activity, "Successful" + mGoogleSignInClient, Toast.LENGTH_SHORT).show();
                 listener.onSignInSuccess(account);

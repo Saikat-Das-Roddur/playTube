@@ -10,15 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
-import com.saikat.playtube.Config;
-import com.saikat.playtube.Model.Video;
 import com.saikat.playtube.R;
-import com.saikat.playtube.YouTube.YoutubeApiHelper;
-import com.saikat.playtube.YouTube.YoutubeListener;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
     

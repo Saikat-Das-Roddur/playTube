@@ -31,12 +31,14 @@
         <ImageView
             android:id="@+id/likeIv"
             android:padding="8dp"
+            android:layout_margin="4dp"
             android:src="@drawable/ic_thumb_up_grey600_24dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <ImageView
             android:id="@+id/disLikeIv"
             android:padding="8dp"
+            android:layout_margin="4dp"
             android:src="@drawable/ic_thumb_down_grey600_24dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
@@ -48,6 +50,16 @@
         android:layout_height="wrap_content">
 
     </androidx.recyclerview.widget.RecyclerView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_margin="36dp"
+        android:onClick="postComment"
+        android:src="@drawable/ic_play_white_48dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
 
 
 </RelativeLayout>

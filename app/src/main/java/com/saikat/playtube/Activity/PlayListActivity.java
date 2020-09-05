@@ -1,93 +1,62 @@
 package com.saikat.playtube.Activity;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.LinearLayout;
 
-import com.androidnetworking.AndroidNetworking;
-import com.androidnetworking.error.ANError;
-import com.androidnetworking.interfaces.JSONObjectRequestListener;
-import com.androidnetworking.interfaces.OkHttpResponseListener;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+import com.google.android.material.tabs.TabLayout;
+import com.saikat.playtube.Adapter.TabsAdapter;
 import com.saikat.playtube.Adapter.VideoAdapter;
-import com.saikat.playtube.Config;
 import com.saikat.playtube.Model.Video;
-import com.saikat.playtube.Others.ServerCalling;
 import com.saikat.playtube.R;
-import com.saikat.playtube.YouTube.YoutubeApiHelper;
-import com.saikat.playtube.YouTube.YoutubeListener;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-import okhttp3.Response;
+public class PlayListActivity extends AppCompatActivity implements TabLayout.OnTabSelectedListener {
 
-public class PlayListActivity extends AppCompatActivity {
 
-    RecyclerView recyclerView;
-    //Adapter
-    VideoAdapter videoAdapter;
-
-    ArrayList<Video> videoArrayList = new ArrayList<>();
-
-    String TAG = getClass().getSimpleName();
+    TabLayout tabLayout;
+    ViewPager viewPager;
+    String channelId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_list);
-        String channelId = getIntent().getStringExtra("channelId");
-        recyclerView = findViewById(R.id.recyclerView);
-        initYoutubeVideoLoader(channelId);
+        tabLayout = findViewById(R.id.tabs);
+        viewPager = findViewById(R.id.viewPagerTab);
+        tabLayout.addTab(tabLayout.newTab().setText("Channel Video"));
+        tabLayout.addTab(tabLayout.newTab().setText("Play List Video"));
+        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        TabsAdapter tabsAdapter = new TabsAdapter(getSupportFragmentManager(),tabLayout.getTabCount());
+        viewPager.setAdapter(tabsAdapter);
+        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        tabLayout.setOnTabSelectedListener( this);
+        //channelId = getIntent().getStringExtra("channelId");
+
+
+
+
     }
 
-    private void initYoutubeVideoLoader(String chanelId) {
-        ServerCalling.getChannelVideos(chanelId, 50, new JSONObjectRequestListener() {
-            @Override
-            public void onResponse(JSONObject jsonObject) {
-                Log.d(TAG, "onResponse: "+jsonObject);
-                try {
-                    JSONArray jsonArray = jsonObject.getJSONArray("items");
-                        for (int i = 0; i <jsonArray.length() ; i++) {
-                        String videoId="";
-                               if(jsonArray.getJSONObject(i).getJSONObject("id").getString("kind").equals("youtube#video")) {
-                                   videoId = jsonArray.getJSONObject(i).getJSONObject("id").getString("videoId");
-                                   }else {
-                                   videoId = jsonArray.getJSONObject(i).getJSONObject("id").getString("playlistId");
-                               }
-                        String videoTitle = jsonArray.getJSONObject(i).getJSONObject("snippet").getString("title");
-                        String videoDesc = jsonArray.getJSONObject(i).getJSONObject("snippet").getString("description");
-                        String videoImage = jsonArray.getJSONObject(i).getJSONObject("snippet").getJSONObject("thumbnails").getJSONObject("medium").getString("url");
-
-                        videoArrayList.add(new Video(videoId,videoTitle,videoImage,videoDesc));
-
-                    }
-                    setAdapter();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-
-            @Override
-            public void onError(ANError anError) {
-                Log.d(TAG, "onError: "+anError);
-            }
-        });
+    @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+        viewPager.setCurrentItem(tab.getPosition());
     }
 
-    private void setAdapter() {
-        videoAdapter = new VideoAdapter(PlayListActivity.this,videoArrayList);
-        recyclerView.setAdapter(videoAdapter);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(PlayListActivity.this);
-        recyclerView.setLayoutManager(layoutManager);
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
+
     }
+
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
+
+    }
+
+
 }
